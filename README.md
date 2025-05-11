@@ -111,37 +111,6 @@ This project aims to simplify complex Asterisk management tasks through a modern
 
   **Note:** This `check-endpoints` script is part of the initial proof-of-concept phase.
 
-## Project Structure
-
-```
-asterisk-bot-mcp/
-├── dist/                     # Compiled JavaScript output
-├── node_modules/             # Project dependencies
-├── src/
-│   ├── commands/             # CLI command scripts
-│   │   └── checkPjsipEndpoints.ts
-│   ├── config/               # Configuration files
-│   │   └── asterisk.config.ts
-│   ├── services/             # Business logic and external service interactions
-│   │   └── asterisk.service.ts
-│   ├── types/                # TypeScript definition files (e.g., for JS libs)
-│   │   └── asterisk-manager.d.ts
-│   └── index.ts              # Main application entry point
-├── tests/                    # Test files
-│   └── placeholder.test.ts
-├── .env                      # Local environment variables (ignored by Git)
-├── .env.example              # Example environment variables
-├── .eslintignore
-├── .eslintrc.js
-├── .gitignore
-├── .prettierignore
-├── .prettierrc.js
-├── jest.config.js
-├── package-lock.json
-├── package.json
-└── tsconfig.json
-```
-
 ## Asterisk Configuration Notes (manager.conf)
 
 Ensure your Asterisk `manager.conf` has a user configured with appropriate permissions. For example:
