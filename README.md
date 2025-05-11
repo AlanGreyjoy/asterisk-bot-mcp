@@ -1,6 +1,21 @@
 # Asterisk Bot MCP Server
 
-This project is a TypeScript Node.js server designed to act as a Management Control Program (MCP) for an Asterisk server. It provides functionalities to interact with Asterisk, initially focusing on checking PJSIP endpoint registrations.
+This project is a TypeScript Node.js server designed to act as a Management Control Program (MCP) for an Asterisk server. It provides functionalities to interact with Asterisk.
+
+**Proof of Concept (POC) - Phase 1:**
+The initial version primarily focuses on a proof-of-concept command: checking PJSIP endpoint registration status. This serves as the first round of testing and establishes the foundational connection and interaction with Asterisk.
+
+**Future Vision:**
+The long-term goal is to develop this into a full-fledged MCP server. This advanced server will enable comprehensive control and management of an Asterisk instance, potentially through an interface suitable for interaction with Large Language Models (LLMs) like Claude. Planned capabilities include, but are not limited to:
+
+- Creating and managing extensions (PJSIP and SIP)
+- Configuring ring groups
+- Setting up and managing call queues
+- Modifying dialplan logic
+- Real-time call monitoring and control
+- And much more, providing a robust API for programmatic Asterisk administration.
+
+This project aims to simplify complex Asterisk management tasks through a modern, programmatic interface.
 
 ## Prerequisites
 
@@ -87,10 +102,14 @@ This project is a TypeScript Node.js server designed to act as a Management Cont
   This executes tests using Jest.
 
 - **Check PJSIP Registered Endpoints:**
+
   ```bash
   npm run check-endpoints
   ```
+
   This script connects to the Asterisk server defined in your `.env` file, queries for PJSIP endpoints, and reports how many are currently considered registered.
+
+  **Note:** This `check-endpoints` script is part of the initial proof-of-concept phase.
 
 ## Project Structure
 
