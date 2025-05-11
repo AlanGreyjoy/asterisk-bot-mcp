@@ -1,25 +1,47 @@
-import Manager from "asterisk-manager";
+// Import our local TypeScript implementation
+import AsteriskManager, {
+  Manager,
+  ManagerEvent,
+  ManagerAction,
+} from "./asterisk-manager/ami";
 import asteriskConfig, { AsteriskConfig } from "../config/asterisk.config";
 
+// Type declaration to help TypeScript recognize the EventEmitter methods
+interface AMIEventEmitter extends Manager {
+  on(event: string, listener: (...args: any[]) => void): this;
+  removeListener(event: string, listener: (...args: any[]) => void): this;
+}
+
+// Define the expected signature of the factory function based on .d.ts and usage
+type AsteriskManagerFactoryType = (
+  port: number,
+  host: string,
+  username?: string,
+  password?: string,
+  events?: boolean,
+) => any; // Return type is the Manager instance, typed as 'any' for now
+
 export class AsteriskService {
-  private ami: Manager;
+  private ami: AMIEventEmitter;
   private connected: boolean = false;
 
   constructor(private config: AsteriskConfig = asteriskConfig) {
-    this.ami = new Manager(
+    // Use our local implementation, cast to AMIEventEmitter
+    this.ami = AsteriskManager(
       this.config.port,
       this.config.host,
       this.config.username,
       this.config.secret,
-      true, // event_listeners_default_on
-    );
+      true, // events enabled
+    ) as AMIEventEmitter;
 
+    // Set up event handlers
     this.ami.on("connect", () => {
       console.log("Successfully connected to Asterisk AMI");
       this.connected = true;
     });
 
-    this.ami.on("disconnect", () => {
+    this.ami.on("close", () => {
       console.log("Disconnected from Asterisk AMI");
       this.connected = false;
     });
@@ -32,101 +54,100 @@ export class AsteriskService {
 
   public connect(): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (this.connected) {
+      if (this.ami.isConnected()) {
         resolve();
         return;
       }
-      // The 'asterisk-manager' library attempts to connect on instantiation if the last param is true.
-      // However, explicit keepAlive and login might be needed for some setups or to ensure connection state.
-      this.ami.keepAlive(); // Starts reconnection logic if not connected
-      this.ami.login((err: Error | null) => {
-        if (err) {
-          console.error("AMI Login failed:", err);
-          this.connected = false;
-          reject(err);
-        } else {
-          console.log("AMI Login successful");
-          this.connected = true;
-          resolve();
-        }
-      });
+
+      this.ami.keepConnected();
+
+      this.ami.login(
+        this.config.username,
+        this.config.secret,
+        true,
+        (err?: Error | null) => {
+          if (err) {
+            console.error("AMI Login failed:", err);
+            this.connected = false;
+            reject(err);
+          } else {
+            console.log("AMI Login successful");
+            this.connected = true;
+            resolve();
+          }
+        },
+      );
     });
   }
 
   public disconnect(): void {
-    if (this.connected) {
-      this.ami.logoff(); // Graceful logoff
-      this.connected = false;
+    if (this.ami.isConnected()) {
+      this.ami.disconnect();
       console.log("Logged off from Asterisk AMI");
     }
   }
 
   public isConnected(): boolean {
-    return this.connected;
+    return this.ami.isConnected();
   }
 
-  public sendAction(
-    action: Record<string, unknown>,
-    timeout?: number,
-  ): Promise<Record<string, unknown>> {
+  public sendAction(action: ManagerAction): Promise<Record<string, unknown>> {
     return new Promise((resolve, reject) => {
-      if (!this.connected) {
+      if (!this.ami.isConnected()) {
         reject(new Error("Not connected to Asterisk AMI"));
         return;
       }
+
       this.ami.action(
         action,
-        (err: Error | null, res: Record<string, unknown> | null) => {
+        (err?: Error | null, res?: Record<string, unknown> | null) => {
           if (err) {
             reject(err);
           } else {
             resolve(res || {});
           }
         },
-        timeout,
       );
     });
   }
 
-  // Example: Get PJSIP endpoints
-  public async getPjsipEndpoints(): Promise<any[]> {
-    const action = { Action: "PJSIPShowEndpoints" };
-    const responseEvents: any[] = [];
+  public async getPjsipEndpoints(): Promise<ManagerEvent[]> {
+    const pjsipAction: ManagerAction = {
+      action: "PJSIPShowEndpoints",
+    };
+    const responseEvents: ManagerEvent[] = [];
 
     return new Promise(async (resolve, reject) => {
-      if (!this.connected) {
+      if (!this.ami.isConnected()) {
         return reject(
           new Error("Not connected to Asterisk AMI for getPjsipEndpoints"),
         );
       }
 
-      const eventHandler = (event: any) => {
+      const eventHandler = (event: ManagerEvent) => {
         if (event.event === "EndpointList") {
           responseEvents.push(event);
         }
         if (event.event === "EndpointListComplete") {
-          this.ami.removeListener("managerevent", eventHandler); // Clean up listener
+          this.ami.removeListener("rawevent", eventHandler);
           resolve(responseEvents);
         }
       };
 
-      this.ami.on("managerevent", eventHandler);
+      this.ami.on("rawevent", eventHandler);
 
       try {
-        const actionResponse = await this.sendAction(action);
-        // The actual data comes through events for PJSIPShowEndpoints
-        // We check actionResponse for immediate errors, but data is handled by eventHandler
-        if (actionResponse.response === "Error") {
-          this.ami.removeListener("managerevent", eventHandler); // Clean up listener on error
+        const actionResponse = await this.sendAction(pjsipAction);
+        if (actionResponse && actionResponse.response === "Error") {
+          this.ami.removeListener("rawevent", eventHandler);
           reject(
             new Error(
               `AMI action PJSIPShowEndpoints failed: ${actionResponse.message}`,
             ),
           );
         }
-        // If the action was accepted, we wait for EndpointListComplete
       } catch (error) {
-        this.ami.removeListener("managerevent", eventHandler); // Clean up listener on error
+        this.ami.removeListener("rawevent", eventHandler);
         reject(error);
       }
     });

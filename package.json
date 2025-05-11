@@ -10,7 +10,7 @@
     "lint": "eslint . --ext .ts",
     "format": "prettier --write .",
     "test": "jest",
-    "check-endpoints": "ts-node src/commands/checkPjsipEndpoints.ts"
+    "check-endpoints": "ts-node scripts/check-endpoints.ts"
   },
   "keywords": [
     "asterisk",
@@ -23,11 +23,14 @@
   "license": "ISC",
   "dependencies": {
     "asterisk-manager": "^0.2.0",
-    "dotenv": "^16.5.0"
+    "dotenv": "^16.5.0",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
+    "@types/asterisk-manager": "^0.0.1",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.15.17",
+    "@types/ws": "^8.5.11",
     "@typescript-eslint/eslint-plugin": "^8.32.0",
     "@typescript-eslint/parser": "^8.32.0",
     "eslint": "^9.26.0",
