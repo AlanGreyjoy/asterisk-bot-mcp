@@ -22,7 +22,7 @@ This project aims to simplify complex Asterisk management tasks through a modern
 - Node.js (v16 or later recommended)
 - npm (usually comes with Node.js)
 - An Asterisk server with AMI (Asterisk Manager Interface) enabled and configured.
-  - For local development, you can run Asterisk in Docker (as mentioned in the initial requirement).
+  - For local development, you can run Asterisk in Docker, WSL, or a VM.
 
 ## Setup
 
@@ -156,7 +156,3 @@ write = system,call,log,verbose,command,agent,user,config,dtmf,reporting,cdr,dia
 ```
 
 Reload Asterisk dialplan or manager settings after changes (`manager reload` in Asterisk CLI).
-
-## Further Development
-
-This project is set up for further expansion. You can add more services, commands, or build an API (e.g., using Express.js) in `src/index.ts` to interact with the MCP server.
